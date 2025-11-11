@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarih Bilgi Yarışması</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        #quiz-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+            width: 100%;
+            max-width: 600px;
+            overflow: hidden;
+        }
+        #quiz-header {
+            background-color: #0056b3;
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+        #quiz-header h1 {
+            margin: 0;
+            font-size: 1.4rem;
+        }
+        #quiz-body {
+            padding: 24px;
+        }
+        #question-container {
+            margin-bottom: 20px;
+        }
+        #question-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        #options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .option-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            font-size: 1rem;
+            text-align: left;
+            background-color: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+        .option-button:hover:not(:disabled) {
+            background-color: #e9ecef;
+            border-color: #007bff;
+        }
+        .option-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+        
+        .option-button.correct {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+            font-weight: bold;
+        }
+        .option-button.incorrect {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+            font-weight: bold;
+        }
+
+        #feedback-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #feedback-text {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            min-height: 1.2em; /* Metin olmasa bile yer kaplaması için */
+        }
+        #feedback-text.correct-feedback {
+            color: #155724;
+        }
+        #feedback-text.incorrect-feedback {
+            color: #721c24;
+        }
+        
+        /* Yeni Gezinme Butonları Alanı */
+        #navigation-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        #prev-button, #next-button, #restart-button {
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            width: 48%; /* Butonların genişliği ayarlandı */
+        }
+
+        #prev-button {
+            background-color: #6c757d; /* Gri renk */
+            color: white;
+            display: none; /* Başlangıçta gizli */
+        }
+        #prev-button:hover {
+            background-color: #5a6268;
+        }
+        
+        #next-button {
+            background-color: #007bff; /* Mavi renk */
+            color: white;
+            display: none; /* Başlangıçta gizli */
+        }
+        #next-button:hover {
+            background-color: #0056b3;
+        }
+        
+        #score-container {
+            padding: 24px;
+            text-align: center;
+            display: none; /* Başlangıçta gizli */
+        }
+        #score-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #0056b3;
+            margin-bottom: 20px;
+        }
+        #restart-button {
+            background-color: #007bff;
+            color: white;
+            width: 100%;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="quiz-container">
+        <div id="quiz-header">
+            <h1>SINIFLARARASI BİLGİ YARIŞMASI HAZIRLIK SORULARI</h1>
+        </div>
+        
+        <div id="quiz-body">
+            <div id="question-container">
+                <p id="question-text"></p>
+                <div id="options-container">
+                    </div>
+            </div>
+
+            <div id="feedback-container">
+                <p id="feedback-text"></p>
+            </div>
+            
+            <div id="navigation-container">
+                <button id="prev-button">Önceki Soru</button>
+                <button id="next-button">Sonraki Soru</button>
+            </div>
+            
+            <div id="score-container">
+                <p id="score-text"></p>
+                <button id="restart-button" onclick="location.reload()">Testi Yeniden Başlat</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- YALNIZCA BURASI GÜNCELLENDİ (SORU LİSTESİ) ---
+        const quizData = [
+            {
+                question: "1. İlk Türklerde Mezar Taşı?",
+                options: ["A) Esik", "B) Kurgan", "C) Höyük", "D) Balbal"],
+                correct: 3, // D
+                userAnswer: null
+            },
+            {
+                question: "2. Yazıyı icat ederek tarih çağlarını başlatan Mezopotamya uygarlığı hangisidir?",
+                options: ["A) Babiller", "B) Asurlular", "C) Sümerler", "D) Akadlar"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "3. Orta Asya'da kurulan ve 'Türk' adını siyasi bir kimlik olarak kullanan ilk Türk devleti hangisidir?",
+                options: ["A) Asya Hun Devleti", "B) Uygur Devleti", "C) Karahanlılar", "D) Göktürk (Köktürk) Devleti"],
+                correct: 3, // D
+                userAnswer: null
+            },
+            {
+                question: "4. Avrupa'da 'Tanrının Kırbacı' olarak bilinen ve Kavimler Göçü sürecinde Avrupa siyasetine yön veren Türk hükümdar kimdir?",
+                options: ["A) Balamir", "B) Attila", "C) Mete Han", "D) Teoman"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "5. İslamiyet'i toplu olarak kabul eden ve Orta Asya'da kurulan ilk Türk-İslam devleti aşağıdakilerden hangisidir?",
+                options: ["A) Gazneliler", "B) Büyük Selçuklular", "C) Karahanlılar", "D) Tolunoğulları"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "6. Anadolu'nun kapılarını Türklere açan ve 'Türkiye Tarihi'ni başlatan savaş olarak kabul edilen olay hangisidir?",
+                options: ["A) 1048 Pasinler Savaşı", "B) 1071 Malazgirt Zaferi", "C) 1176 Miryokefalon Savaşı", "D) 1302 Koyunhisar Savaşı"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "7. Osmanlı Devleti'nin kurucusu Osman Bey, hangi Türk boyuna mensuptur?",
+                options: ["A) Avşar", "B) Kınık", "C) Kayı", "D) Bayat"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "8. 1453 yılında İstanbul'u fethederek Orta Çağ'ı kapatıp Yeni Çağ'ı açan ve 'Fatih' unvanını alan Osmanlı padişahı kimdir?",
+                options: ["A) I. Mehmet (Çelebi)", "B) II. Murat", "C) Fatih Sultan Mehmet (II. Mehmet)", "D) Yavuz Sultan Selim"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            // PDF'te 9-13 arası sorular eksikti.
+            {
+                question: "9. Osmanlı Devleti'nde 1876 yılında ilan edilen, anayasal düzene geçişin ilk adımı olan ve ilk Türk anayasası kabul edilen belge hangisidir?",
+                options: ["A) Mecelle", "B) Kanun-i Esasi", "C) Tanzimat Fermanı", "D) Sened-i İttifak"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "10.  I. Dünya Savaşı'nı başlatan görünen neden (kıvılcım) aşağıdakilerden hangisidir?",
+                options: ["A) Almanya'nın Alsas-Loren'i işgali", "B) Goben ve Breslav gemilerinin Rus limanlarını bombalaması", "C) Avusturya-Macaristan veliahtının Saraybosna'da öldürülmesi", "D) Devletler arası sömürgecilik yarışı"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "11. Mustafa Kemal'in I. Dünya Savaşı'nda 'Anafartalar Kahramanı' olarak tanındığı cephe hangisidir?",
+                options: ["A) Kafkas Cephesi", "B) Çanakkale Cephesi", "C) Suriye-Filistin Cephesi", "D) Irak Cephesi"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            // PDF'te 17-19 arası sorular eksikti.
+            {
+                question: "12. Türk Kurtuluş Savaşı'nı askeri açıdan sona erdiren ve Türkiye Cumhuriyeti'nin uluslararası alanda tanınmasını sağlayan 'tapu senedi' niteliğindeki antlaşma hangisidir?",
+                options: ["A) Mondros Ateşkes Antlaşması", "B) Sevr Antlaşması", "C) Mudanya Ateşkes Antlaşması", "D) Lozan Barış Antlaşması"],
+                correct: 3, // D
+                userAnswer: null
+            },
+            {
+                question: "13. Anadolu'da kurulan Hititler ile Mısırlılar arasında yapılan ve tarihteki ilk yazılı antlaşma olarak bilinen antlaşma hangisidir?",
+                options: ["A) Kadeş Antlaşması", "B) Zenta Antlaşması", "C) Kerden Antlaşması", "D) Amasya Antlaşması"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "14. 'El-Kanun fi't-Tıb' (Tıbbın Kanunu) adlı eseri yüzyıllarca Avrupa üniversitelerinde okutulan ve 'Avicenna' olarak tanınan Türk-İslam bilgini kimdir?",
+                options: ["A) Farabi", "B) İbn-i Sina", "C) Biruni", "D) Harezmi"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "15. Büyük Selçuklu Devleti'nde 'Siyasetname' adlı eseri yazan ve Nizamiye Medreselerini kuran ünlü vezir kimdir?",
+                options: ["A) Nizamülmülk", "B) Tuğrul Bey", "C) Tonyukuk", "D) Vezir Ali Paşa"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "16. Kudüs'ü Haçlılardan geri alan ve III. Haçlı Seferi'nin başlamasına neden olan Eyyubi Devleti'nin kurucusu ve sultanı kimdir?",
+                options: ["A) Nureddin Zengi", "B) İmadüddin Zengi", "C) Baybars", "D) Selahaddin Eyyubi"],
+                correct: 3, // D
+                userAnswer: null
+            },
+            {
+                question: "17. Yavuz Sultan Selim'in 1516 (Mercidabık) ve 1517 (Ridaniye) savaşlarıyla Memlük Devleti'ne son vererek fethettiği bölge neresidir?",
+                options: ["A) İran", "B) Balkanlar", "C) Mısır", "D) Kırım"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "18. Osmanlı Devleti'nde toplumun din veya mezhep esasına göre örgütlenerek yönetilmesini sağlayan sisteme ne ad verilir?",
+                options: ["A) Tımar Sistemi", "B) Millet Sistemi", "C) Devşirme Sistemi", "D) İltizam Sistemi"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "19. Osmanlı Devleti'nde III. Selim döneminde Batı tarzında kurulan modern orduya verilen isim nedir?",
+                options: ["A) Sekban-1 Cedid", "B) Asakir-i Mansure-i Muhammediyye", "C) Nizam-1 Cedid", "D) Eşkinci Ocağı"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "20. Osmanlı tarihinde padişahın yetkilerini ilk kez kısıtlayan ve ayanların varlığını tanıyan 1808 tarihli belge hangisidir?",
+                options: ["A) Sened-i İttifak", "B) Tanzimat Fermanı", "C) Islahat Fermanı", "D) Kanunname-i Ali Osman"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "21. 1856 Islahat Fermanı'nın ilan edilmesinde etkili olan ve Osmanlı Devleti'nin Avrupalı devletlerle ittifak yaptığı savaş hangisidir?",
+                options: ["A) 93 Harbi (1877-78)", "B) Kırım Savaşı", "C) Dömeke Meydan Muharebesi", "D) Trablusgarp Savaşı"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "22. I. Dünya Savaşı'nda Osmanlı Devleti'nin Almanya'nın yanında savaşa girmesine neden olan iki Alman gemisinin adı nedir?",
+                options: ["A) Queen Elizabeth ve Agamemnon", "B) Goben (Yavuz) ve Breslav (Midilli)", "C) Bismarck ve Tirpitz", "D) Sedan ve Verdun"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "23. Mustafa Kemal'in 'Hattı müdafaa yoktur, sathı müdafaa vardır. O satıh bütün vatandır.' emrini verdiği savaş hangisidir?",
+                options: ["A) I. İnönü Muharebesi", "B) Kütahya-Eskişehir Muharebeleri", "C) Sakarya Meydan Muharebesi", "D) Büyük Taarruz"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "24. Kurtuluş Savaşı sonrası Doğu Trakya, Boğazlar ve İstanbul'un savaş yapılmadan kurtarılmasını sağlayan antlaşma hangisidir?",
+                options: ["A) Lozan Barış Antlaşması", "B) Mudanya Ateşkes Antlaşması", "C) Ankara Antlaşması (1921)", "D) Kars Antlaşması"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "25. 1921 Anayasası (Teşkilat-ı Esasiye) hangi savaşın devam ettiği günlerde kabul edilmiştir?",
+                options: ["A) I. İnönü Muharebesi", "B) Sakarya Meydan Muharebesi", "C) II. İnönü Muharebesi", "D) Büyük Taarruz"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "26. Laiklik ilkesi, Türkiye Cumhuriyeti Anayasası'na (1924 Anayasası'na) hangi yıl yapılan değişiklikle girmiştir?",
+                options: ["A) 1928", "B) 1934", "C) 1937", "D) 1924"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "27.Atatürk döneminde Türkiye ile İngiltere arasında yaşanan Musul sorunu (Irak sınırı), hangi antlaşma ile Türkiye'nin aleyhine çözümlenmiştir?",
+                options: ["A) 1921 Kars Antlaşması", "B) 1926 Ankara Antlaşması", "C) Montrö Boğazlar Sözleşmesi", "D) Sadabat Paktı"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "28. Hatay'ın 1939'da anavatana katılması, hangi devletle yaşanan sorunların ardından gerçekleşmiştir?",
+                options: ["A) İngiltere", "B) İtalya", "C) Suriye", "D) Fransa"],
+                correct: 3, // D
+                userAnswer: null
+            },
+            {
+                question: "29. Osmanlı Devleti'nin Kuzey Afrika'daki son toprağı olan Trablusgarp'ı (Libya) 1911'de işgal eden devlet hangisidir?",
+                options: ["A) Fransa", "B) İngiltere", "C) İtalya", "D) Yunanistan"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "30. I. Balkan Savaşı'nda olmayıp, II. Balkan Savaşı'nda yer alan devlet hangisidir?",
+                options: ["A) Bulgaristan", "B) Yunanistan", "C) Sırbistan", "D) Romanya"],
+                correct: 3, // D
+                userAnswer: null
+            },
+            {
+                question: "31. 'Son Osmanlı Mebusan Meclisi' tarafından kabul edilen ve Milli Mücadele'nin siyasi hedeflerini belirleyen belge hangisidir?",
+                options: ["A) Misak-ı Milli", "B) Teşkilat-ı Esasiye", "C) Tekalif-i Milliye Emirleri", "D) Amasya Protokolü"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "32. I. Dünya Savaşı'nda Halil (Kut) Paşa komutasındaki Osmanlı ordusunun, Irak Cephesi'nde İngilizlere karşı 1916'da kazandığı büyük zaferin adı nedir?",
+                options: ["A) Sarıkamış Harekatı", "B) Kanal Harekatı", "C) Kut'ül Amare Kuşatması", "D) Gazze Muharebesi"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "33. Tarihte bilinen ilk Türk alfabesi olan ve Göktürk Kitabeleri'nin yazılmasında kullanılan alfabe hangisidir?",
+                options: ["A) Uygur Alfabesi", "B) Sogd Alfabesi", "C) Orhun Alfabesi (Göktürk Alfabesi)", "D) Kiril Alfabesi"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "34.Türklerin yerleşik hayata geçtiği, tarım yaptığı, maniheizm dinini benimsediği ve 'Kağıt ve Matbaa'yı ilk kez kullanan Türk devleti hangisidir?",
+                options: ["A) Göktürkler", "B) Hunlar", "C) Hazarlar", "D) Uygurlar"],
+                correct: 3, // D
+                userAnswer: null
+            },
+            {
+                question: "35. 1077-1308 yılları arasında Anadolu'da hüküm süren, başkenti İznik/Konya olan, Haçlı Seferleri'ne karşı mücadele eden Türk devleti hangisidir?",
+                options: ["A) Büyük Selçuklu Devleti", "B) Türkiye Selçuklu Devleti", "C) Osmanlı Devleti", "D) Karamanoğulları Beyliği"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "36.  Osmanlı Devleti'nde, devletin topraklarını (tımar) belirli hizmetler (asker yetiştirme) karşılığında komutanlara vermesine dayanan sistemin adı nedir?",
+                options: ["A) İltizam Sistemi", "B) Devşirme Sistemi", "C) Tımar Sistemi", "D) Millet Sistemi"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "37. Osmanlı Devleti'nde Kapıkulu askerlerinin üç ayda bir aldıkları maaşa ne ad verilirdi?",
+                options: ["A) Cizye", "B) Ulufe", "C) Haraç", "D) Cülus"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "38. Osmanlı Devleti'nin Balkanlar'daki ilk başkenti (payitahtı) olan ve 1363 yılında fethedilen şehir hangisidir?",
+                options: ["A) Sofya", "B) Bursa", "C) Edirne", "D) İznik"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "39. Coğrafi Keşifler sonucunda önem kaybeden İpek ve Baharat Yolları'na alternatif olarak keşfedilen, Afrika'nın güneyini dolaşarak Hindistan'a ulaşan deniz yolunun adı nedir?",
+                options: ["A) Süveyş Kanalı", "B) Panama Kanalı", "C) Kral Yolu", "D) Ümit Burnu"],
+                correct: 3, // D
+                userAnswer: null
+            },
+            {
+                question: "40. Martin Luther'in Almanya'da Katolik Kilisesi'nin uygulamalarına karşı çıkmasıyla başlayan hareketin adı nedir?",
+                options: ["A) Rönesans", "B) Reform", "C) Aydınlanma Çağı", "D) Sanayi İnkılabı"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "41. 1838'de Osmanlı'nın İngiltere ile imzaladığı, Osmanlı'yı Avrupa'nın 'açık pazarı' haline getiren antlaşma hangisidir?",
+                options: ["A) Balta Limanı Antlaşması", "B) Hünkar İskelesi Antlaşması", "C) Paris Antlaşması", "D) Berlin Antlaşması"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "42. Osmanlı Devleti'nde 'Lale Devri' olarak bilinen (1718-1730) dönemin padişahı kimdir?",
+                options: ["A) III. Selim", "B) II. Mahmut", "C) III. Ahmet", "D) I. Mahmut"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "43. II. Mahmut döneminde 1826'da, 'Vaka-i Hayriye' (Hayırlı Olay) olarak adlandırılan gelişme ile ortadan kaldırılan askeri ocak hangisidir?",
+                options: ["A) Tımarlı Sipahiler", "B) Yeniçeri Ocağı", "C) Humbaracı Ocağı", "D) Nizam-1 Cedid"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "44. I. Dünya Savaşı'ndan sonra (1918) 'Wilson İlkeleri'ni yayınlayan devlet başkanı kimdir?",
+                options: ["A) Lloyd George (İngiltere)", "B) Georges Clemenceau (Fransa)", "C) Çar II. Nikola (Rusya)", "D) Woodrow Wilson (ABD)"],
+                correct: 3, // D
+                userAnswer: null
+            },
+            {
+                question: "45. Kurtuluş Savaşı'nda Batı Cephesi'nde kazanılan hangi zaferden sonra TBMM, Mustafa Kemal Paşa'ya 'Gazi' unvanı ve 'Mareşal' rütbesi vermiştir?",
+                options: ["A) I. İnönü Zaferi", "B) II. İnönü Zaferi", "C) Sakarya Meydan Muharebesi", "D) Büyük Taarruz"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "46.Saltanatın kaldırılmasından (1 Kasım 1922) sonra sürgüne gönderilen son Osmanlı padişahı kimdir?",
+                options: ["A) II. Abdülhamit", "B) V. Mehmet Reşat", "C) Vahdettin (VI. Mehmet)", "D) Abdülmecid Efendi"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            // PDF'te 55 numaralı soru bozuktu.
+            {
+                question: "47. 3 Mart 1924 tarihinde, Cumhuriyet rejimini ve laikliği pekiştirmek amacıyla TBMM tarafından kaldırılan makam (veya kurum) aşağıdakilerden hangisidir?",
+                options: ["A) Saltanat", "B) Halifelik", "C) Şeyhülislamlık", "D) Medreseler"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "48. Kadınlara seçme ve seçilme hakkının tanınması, Medeni Kanun'un kabulü gibi gelişmeler öncelikle hangi Atatürk ilkesiyle doğrudan ilgilidir?",
+                options: ["A) Milliyetçilik", "B) Laiklik", "C) Halkçılık", "D) Devletçilik"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "49. 1934 yılında kabul edilen Soyadı Kanunu, (toplumsal ayrıcalıkları yasaklaması yönüyle) hangi ilkeyi güçlendirmeye yöneliktir?",
+                options: ["A) Halkçılık", "B) Laiklik", "C) Devletçilik", "D) Milliyetçilik"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "50. Türkiye Cumhuriyeti'nin, Boğazlar üzerindeki tam egemenliğini sağladığı 1936 tarihli uluslararası sözleşme hangisidir?",
+                options: ["A) Lozan Barış Antlaşması", "B) Montrö Boğazlar Sözleşmesi", "C) Balkan Paktı", "D) Sadabat Paktı"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "51. II. Dünya Savaşı sırasında Türkiye Cumhuriyeti'nin Cumhurbaşkanı kimdi ve Türkiye'nin temel dış politikası neydi?",
+                options: ["A) Mustafa Kemal Atatürk / Tarafsızlık", "B) İsmet İnönü / Savaş dışı kalma (Tarafsızlık)", "C) Celal Bayar / Müttefiklerin yanında savaşa girme", "D) Fevzi Çakmak / Mihver devletleri destekleme"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "52. 1917'de Rusya'da çarlığı devirip Sovyetler Birliği'nin kurulmasına yol açan olayın adı nedir?",
+                options: ["A) Fransız İhtilali", "B) Bolşevik Devrimi", "C) Sanayi Devrimi", "D) Soğuk Savaş"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "53. 1929'da New York Borsası'nın çöküşüyle başlayan ve tüm dünyayı ekonomik olarak sarsan olayın adı nedir?",
+                options: ["A) Büyük Buhran (Dünya Ekonomik Krizi)", "B) Sanayi Devrimi", "C) Petrol Krizi", "D) Soğuk Savaş"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "54. İkinci Dünya Savaşı hangi olayın ardından 1 Eylül 1939'da resmen başlamıştır?",
+                options: ["A) Almanya'nın Polonya'yı işgal etmesi", "B) Japonya'nın Pearl Harbor'a saldırması", "C) Hitler'in iktidara gelmesi", "D) Sovyetler Birliği'nin dağılması"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "55. İkinci Dünya Savaşı sırasında 'Mihver Devletler' bloğunu oluşturan üç ana ülke hangileridir?",
+                options: ["A) Almanya, İtalya, Japonya", "B) İngiltere, Fransa, ABD", "C) Sovyetler Birliği, Çin, İngiltere", "D) Almanya, Avusturya-Macaristan, Osmanlı"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "56. İkinci Dünya Savaşı'nda ABD'nin Japonya'nın Hiroşima ve Nagazaki şehirlerine attığı silahın türü nedir?",
+                options: ["A) Biyolojik Silah", "B) Kimyasal Silah", "C) Hidrojen Bombası", "D) Atom Bombası"],
+                correct: 3, // D
+                userAnswer: null
+            },
+            {
+                question: "57. 1949'da Sovyetler Birliği'ne karşı Batı Bloku ülkeleri tarafından kurulan askeri ittifakın adı nedir?",
+                options: ["A) Varşova Paktı", "B) Birleşmiş Milletler", "C) NATO (Kuzey Atlantik Paktı)", "D) CENTO"],
+                correct: 2, // C
+                userAnswer: null
+            },
+            {
+                question: "58.NATO'ya karşı Doğu Bloku ülkelerinin 1955'te kurduğu askeri ittifakın adı nedir?",
+                options: ["A) Varşova Paktı", "B) SEATO", "C) ASEAN", "D) Kominform"],
+                correct: 0, // A
+                userAnswer: null
+            },
+            {
+                question: "59. Uzaya çıkan ilk insan olan Sovyet kozmonot kimdir?",
+                options: ["A) Neil Armstrong", "B) Yuri Gagarin", "C) Vladimir Komarov", "D) Buzz Aldrin"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "60. 1969 yılında Ay'a ayak basan ilk insan olan ABD'li astronot kimdir?",
+                options: ["A) Yuri Gagarin", "B) Neil Armstrong", "C) Michael Collins", "D) Buzz Aldrin"],
+                correct: 1, // B
+                userAnswer: null
+            },
+            {
+                question: "61. Hindistan'ın bağımsızlık mücadelesine şiddet içermeyen sivil itaatsizlik eylemleriyle liderlik eden kişi kimdir?",
+                options: ["A) Nelson Mandela", "B) Mahatma Gandhi", "C) Muhammed Ali Cinnah", "D) Cengiz Han"],
+                correct: 1, // B
+                userAnswer: null
+            }
+        ];
+        // --- GÜNCELLEME BURADA BİTTİ ---
+
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        // Element seçicileri
+        const questionTextEl = document.getElementById('question-text');
+        const optionsContainerEl = document.getElementById('options-container');
+        const feedbackTextEl = document.getElementById('feedback-text');
+        const nextButtonEl = document.getElementById('next-button');
+        const prevButtonEl = document.getElementById('prev-button');
+        
+        const scoreContainerEl = document.getElementById('score-container');
+        const questionContainerEl = document.getElementById('question-container');
+        const feedbackContainerEl = document.getElementById('feedback-container');
+        const navigationContainerEl = document.getElementById('navigation-container');
+        const scoreTextEl = document.getElementById('score-text');
+
+        function loadQuestion() {
+            const currentQuestion = quizData[currentQuestionIndex];
+            const hasAnswered = (currentQuestion.userAnswer !== null);
+
+            // Temizle
+            feedbackTextEl.textContent = '';
+            feedbackTextEl.className = '';
+            optionsContainerEl.innerHTML = '';
+            
+            questionTextEl.textContent = currentQuestion.question;
+
+            // Seçenek butonlarını oluştur
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.classList.add('option-button');
+                
+                if (hasAnswered) {
+                    // Eğer soru daha önce cevaplandıysa...
+                    button.disabled = true; // Butonları pasif yap
+                    if (index === currentQuestion.correct) {
+                        button.classList.add('correct'); // Doğruyu yeşil yap
+                    } else if (index === currentQuestion.userAnswer) {
+                        button.classList.add('incorrect'); // Kullanıcının yanlış cevabını kırmızı yap
+                    }
+                } else {
+                    // Soru ilk kez yükleniyorsa, cevaplama etkinliğini ekle
+                    button.addEventListener('click', () => selectAnswer(index, button));
+                }
+                
+                optionsContainerEl.appendChild(button);
+            });
+
+            // Butonların görünürlüğünü ayarla
+            manageButtonVisibility(hasAnswered);
+
+            // Eğer cevaplanmışsa, eski geri bildirimi de yükle
+            if (hasAnswered) {
+                if (currentQuestion.userAnswer === currentQuestion.correct) {
+                    feedbackTextEl.textContent = 'Doğru Cevap!';
+                    feedbackTextEl.classList.add('correct-feedback');
+                } else {
+                    feedbackTextEl.textContent = 'Yanlış Cevap!';
+                    feedbackTextEl.classList.add('incorrect-feedback');
+                }
+            }
+        }
+
+        function selectAnswer(selectedIndex, selectedButton) {
+            const currentQuestion = quizData[currentQuestionIndex];
+            
+            // Eğer soru zaten cevaplanmışsa (hızlı tıklama vb. için) işlemi durdur
+            if (currentQuestion.userAnswer !== null) return;
+
+            // Cevabı kaydet
+            currentQuestion.userAnswer = selectedIndex;
+            const correctIndex = currentQuestion.correct;
+
+            // Tüm butonları pasif hale getir
+            Array.from(optionsContainerEl.children).forEach(btn => {
+                btn.disabled = true;
+            });
+
+            // Puanı ve geri bildirimi ayarla
+            if (selectedIndex === correctIndex) {
+                selectedButton.classList.add('correct');
+                feedbackTextEl.textContent = 'Doğru Cevap!';
+                feedbackTextEl.classList.add('correct-feedback');
+                score++; // Puan sadece ilk doğru cevapta eklenir
+            } else {
+                selectedButton.classList.add('incorrect');
+                feedbackTextEl.textContent = 'Yanlış Cevap!';
+                feedbackTextEl.classList.add('incorrect-feedback');
+                // Yanlış cevap durumunda doğruyu da göster
+                optionsContainerEl.children[correctIndex].classList.add('correct');
+            }
+            
+            // Cevap verildiği için butonları tekrar ayarla
+            manageButtonVisibility(true);
+        }
+
+        function manageButtonVisibility(hasAnswered) {
+            // Önceki Butonu: İlk soruda değilsek göster
+            prevButtonEl.style.display = (currentQuestionIndex > 0) ? 'block' : 'none';
+
+            // Sonraki Butonu:
+            if (hasAnswered) {
+                nextButtonEl.style.display = 'block'; // Cevap verilmişse her zaman göster
+                if (currentQuestionIndex === quizData.length - 1) {
+                    nextButtonEl.textContent = 'Sonuçları Gör';
+                } else {
+                    nextButtonEl.textContent = 'Sonraki Soru';
+                }
+            } else {
+                nextButtonEl.style.display = 'none'; // Cevap verilmemişse gizle
+            }
+        }
+
+        function showFinalScore() {
+            // Test alanını gizle
+            questionContainerEl.style.display = 'none';
+            feedbackContainerEl.style.display = 'none';
+            navigationContainerEl.style.display = 'none';
+            
+            // Skor alanını göster
+            scoreContainerEl.style.display = 'block';
+            scoreTextEl.textContent = `Test bitti! Toplam Puanınız: ${score} / ${quizData.length}`;
+        }
+
+        // Butonlara tıklama olayları
+        nextButtonEl.addEventListener('click', () => {
+            if (currentQuestionIndex < quizData.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                showFinalScore();
+            }
+        });
+
+        prevButtonEl.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+            }
+        });
+
+        // Testi başlat
+        loadQuestion();
+    </script>
+
+</body>
+</html>
